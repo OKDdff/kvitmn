@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mono Editor">
+
+    <title>Monobank Editor</title>
+    
+    <style>
+        @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #000;
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden; 
+        }
+
+        #wrapper {
+            width: 100vw; min-height: 100vh;
+            display: flex; justify-content: center;
+            background-color: #1a1a1a; overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .receipt-container {
+            position: relative;
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            width: 100%;
+            height: auto;
+        }
+
+        .editable {
+            position: absolute;
+            background: transparent; 
+            outline: none;
+            white-space: nowrap;
+            display: inline-block;
+            
+            /* Твій жирний шрифт */
+            font-weight: 600; 
+            letter-spacing: -0.02em;
+            color: #1a1a1c;
+
+            filter: none;
+            -webkit-font-smoothing: antialiased; 
+            min-width: 15px;
+            min-height: 1.2em;
+        }
+
+        /* Якщо текст дуже довгий (наприклад, сума літерами) */
+        .wrap {
+            white-space: normal;
+            max-width: 45vw;
+            line-height: 1.1;
+        }
+
+        .grow-left {
+            transform: translateX(-100%);
+            text-align: right;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body>
+
+    <div id="wrapper">
+        <div id="receipt" class="receipt-container" spellcheck="false"></div>
+    </div>
+
+    <script>
+        let userID = localStorage.getItem('mono_editor_user');
+        if (!userID) {
+            userID = prompt("Введіть ваше ім'я:", "User");
+            if (!userID) userID = 'mono_guest';
+            localStorage.setItem('mono_editor_user', userID);
+        }
+
+        // Конфігурація полів згідно з твоїм скріншотом
+        const fieldsConfig = [
+            // Шапка (номер квитанції та дата зверху)
+            { id: 'm1', t: '04B3-T314-B969-2M3C', left: 55, top: 23.5, s: 2.8, growLeft: true },
+            { id: 'm2', t: '14.04.2026', left: 78.5, top: 23.5, s: 2.8 },
+
+            // Відправник
+            { id: 'm3', t: 'Ящук Роман Миколайович', left: 47.5, top: 27.5, s: 2.7 },
+            { id: 'm4', t: 'Універсал Банк', left: 47.5, top: 29.3, s: 2.7 },
+            { id: 'm5', t: '322001', left: 47.5, top: 31.1, s: 2.7 },
+            { id: 'm6', t: 'VISA', left: 47.5, top: 32.8, s: 2.7 },
+            { id: 'm7', t: 'UA6232200100000262000332156538,', left: 47.5, top: 34.4, s: 2.4 },
+            { id: 'm8', t: '444111******1335', left: 47.5, top: 36.1, s: 2.7 },
+
+            // Одержувач
+            { id: 'm9', t: 'ПриватБанк', left: 47.5, top: 40.8, s: 2.7 },
+            { id: 'm10', t: 'VISA', left: 47.5, top: 42.6, s: 2.7 },
+            { id: 'm11', t: '4149499075804946', left: 47.5, top: 44.4, s: 2.7 },
+
+            // Деталі транзакції
+            { id: 'm12', t: '200.00', left: 47.5, top: 49.3, s: 2.7 },
+            { id: 'm13', t: '0.00', left: 47.5, top: 51.1, s: 2.7 },
+            { id: 'm14', t: 'двісті гривень 00 копійок', left: 47.5, top: 52.8, s: 2.7, isWrap: true },
+            { id: 'm15', t: '490404', left: 47.5, top: 54.6, s: 2.7 },
+            { id: 'm16', t: 'Переказ особистих коштів', left: 47.5, top: 56.4, s: 2.7 },
+            { id: 'm17', t: '14.04.2026 12:57', left: 47.5, top: 58.1, s: 2.7 },
+            { id: 'm18', t: 'MONODirectR', left: 47.5, top: 59.9, s: 2.7 }
+        ];
+
+        const container = document.getElementById('receipt');
+
+        function init() {
+            const img = new Image();
+            img.src = 'IMG_3372.png'; // Твоя назва файлу
+            img.onload = function() {
+                container.style.height = (window.innerWidth * (img.height / img.width)) + 'px';
+                container.style.backgroundImage = "url('IMG_3372.png')";
+                renderFields();
+                loadSaved();
+            };
+        }
+
+        function renderFields() {
+            fieldsConfig.forEach(conf => {
+                const el = document.createElement('div');
+                el.id = conf.id;
+                let classes = ['editable'];
+                if (conf.growLeft) classes.push('grow-left');
+                if (conf.isWrap) classes.push('wrap');
+                
+                el.className = classes.join(' ');
+                el.contentEditable = "true";
+                el.style.top = conf.top + '%';
+                el.style.left = conf.left + '%';
+                el.style.fontSize = conf.s + 'vw';
+                el.innerText = conf.t;
+
+                el.oninput = saveAll;
+                el.onblur = function() {
+                    if (this.innerText.trim() === "") {
+                        this.innerHTML = "&nbsp;";
+                        saveAll();
+                    }
+                };
+
+                container.appendChild(el);
+            });
+        }
+
+        function saveAll() {
+            const data = {};
+            document.querySelectorAll('.editable').forEach(el => data[el.id] = el.innerText);
+            localStorage.setItem('mono_data_' + userID, JSON.stringify(data));
+        }
+
+        function loadSaved() {
+            const saved = localStorage.getItem('mono_data_' + userID);
+            if (saved) {
+                const data = JSON.parse(saved);
+                for (let id in data) { 
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = data[id]; 
+                }
+            }
+        }
+
+        window.onload = init;
+        window.oncontextmenu = (e) => { e.preventDefault(); return false; };
+    </script>
+</body>
+</html>
