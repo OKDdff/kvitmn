@@ -3,36 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Monobank Editor Pro</title>
+    <title>Monobank Fullscreen Editor</title>
     <style>
         @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #000;
+            margin: 0; padding: 0; 
+            width: 100%; min-height: 100%;
+            background-color: #fff;
             font-family: 'Manrope', sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            touch-action: none; /* Забороняємо стандартні жести браузера в режимі розробника */
+            overflow-x: hidden;
+            touch-action: none; /* Блокуємо скрол в режимі редагування */
         }
 
         #dev-tools {
-            width: 100%; max-width: 500px;
-            background: #222; color: #00ff00;
-            padding: 12px; font-family: monospace; font-size: 12px;
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: rgba(0,0,0,0.8); color: #0f0;
+            padding: 8px; font-family: monospace; font-size: 11px;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 1000; border-bottom: 1px solid #444;
+            z-index: 9999;
         }
 
-        #wrapper {
-            width: 100%; max-width: 500px;
-            background-color: #fff;
+        #receipt-wrapper {
+            width: 100vw; /* Чітко на всю ширину екрана */
             position: relative;
-            user-select: none;
+            background-color: #fff;
         }
 
         .receipt-container {
-            position: relative;
             width: 100%;
+            position: relative;
             background-size: 100% 100%;
             background-repeat: no-repeat;
         }
@@ -46,66 +46,64 @@
             letter-spacing: -0.01em;
             color: #1a1a1c;
             -webkit-font-smoothing: antialiased;
-            z-index: 5;
-            touch-action: none;
+            z-index: 10;
+            touch-action: none; /* Важливо для Drag-and-Drop */
         }
 
-        /* Адаптивний шрифт */
-        .editable { font-size: calc(var(--size) * 0.88vw); }
-        @media (min-width: 500px) {
-            .editable { font-size: calc(var(--size) * 4.4px); }
-        }
+        /* Шрифт чітко під екран телефону */
+        .editable { font-size: calc(var(--size) * 0.9vw); }
 
-        /* Візуалізація режиму розробника */
         .dev-mode .editable {
-            background: rgba(0, 255, 0, 0.1);
-            box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.5);
+            box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.4);
+            background: rgba(0, 255, 0, 0.05);
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="dev-mode"> <div id="dev-tools">
+<body class="dev-mode">
+
+    <div id="dev-tools">
         <label><input type="checkbox" id="dev-toggle" checked> DEV MODE</label>
-        <span id="coords-display">L: 47.4% T: 27.5%</span>
+        <span id="coords">L: 0% T: 0%</span>
     </div>
 
-    <div id="wrapper">
+    <div id="receipt-wrapper">
         <div id="receipt" class="receipt-container" spellcheck="false"></div>
     </div>
 
     <script>
         const container = document.getElementById('receipt');
         const devToggle = document.getElementById('dev-toggle');
-        const coordsDisplay = document.getElementById('coords-display');
+        const coordsDisplay = document.getElementById('coords');
 
-        // ОНОВЛЕНІ ДАНІ (Інші цифри та ПІБ)
         const fieldsConfig = [
-            { id: 'm1', t: '77X2-A551-K093-4P1L', left: 49.3, top: 23.4, s: 2.6, growLeft: true },
-            { id: 'm2', t: '17.04.2026', left: 58.5, top: 23.4, s: 2.6 },
-            { id: 'm3', t: 'Коваленко Олег Петрович', left: 47.4, top: 27.5, s: 2.4 },
+            { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 49.3, top: 23.4, s: 2.6, growLeft: true },
+            { id: 'm2', t: '18.04.2026', left: 58.5, top: 23.4, s: 2.6 },
+            { id: 'm3', t: 'Мельник Артем Вікторович', left: 47.4, top: 27.5, s: 2.4 },
             { id: 'm4', t: 'Універсал Банк', left: 47.4, top: 29.3, s: 2.4 },
             { id: 'm5', t: '322001', left: 47.4, top: 31.05, s: 2.4 },
             { id: 'm6', t: 'Mastercard', left: 47.4, top: 32.8, s: 2.4 },
-            { id: 'm7', t: 'UA8932200100000262000998877665', left: 47.4, top: 34.45, s: 2.1 },
-            { id: 'm8', t: '537541******0092', left: 47.4, top: 36.3, s: 2.4 },
+            { id: 'm7', t: 'UA4432200100000262000112233445', left: 47.4, top: 34.45, s: 2.1 },
+            { id: 'm8', t: '516875******4490', left: 47.4, top: 36.3, s: 2.4 },
             { id: 'm9', t: 'ПриватБанк', left: 47.4, top: 40.8, s: 2.4 },
             { id: 'm10', t: 'VISA', left: 47.4, top: 42.6, s: 2.4 },
-            { id: 'm11', t: '4441114455667788', left: 47.4, top: 44.4, s: 2.4 },
-            { id: 'm12', t: '1,450.00', left: 47.4, top: 49.3, s: 2.5 },
+            { id: 'm11', t: '4149499988887777', left: 47.4, top: 44.4, s: 2.4 },
+            { id: 'm12', t: '3,200.00', left: 47.4, top: 49.3, s: 2.5 },
             { id: 'm13', t: '0.00', left: 47.4, top: 51.1, s: 2.5 },
-            { id: 'm14', t: 'одна тисяча чотириста п’ятдесят гривень', left: 47.4, top: 52.85, s: 2.3 },
-            { id: 'm15', t: '882103', left: 47.4, top: 54.6, s: 2.4 },
-            { id: 'm16', t: 'Поповнення карткового рахунку', left: 47.4, top: 56.4, s: 2.4 },
-            { id: 'm17', t: '17.04.2026 14:20', left: 47.4, top: 58.1, s: 2.4 },
-            { id: 'm18', t: 'MONOMobileApp', left: 47.4, top: 59.9, s: 2.4 }
+            { id: 'm14', t: 'три тисячі двісті гривень 00 копійок', left: 47.4, top: 52.85, s: 2.3 },
+            { id: 'm15', t: '771209', left: 47.4, top: 54.6, s: 2.4 },
+            { id: 'm16', t: 'Оплата послуг', left: 47.4, top: 56.4, s: 2.4 },
+            { id: 'm17', t: '18.04.2026 09:15', left: 47.4, top: 58.1, s: 2.4 },
+            { id: 'm18', t: 'MONO-API-GATE', left: 47.4, top: 59.9, s: 2.4 }
         ];
 
         function init() {
             const img = new Image();
             img.src = 'IMG_3372.PNG'; 
             img.onload = function() {
-                container.style.height = (container.offsetWidth * (img.height / img.width)) + 'px';
+                container.style.height = (window.innerWidth * (img.height / img.width)) + 'px';
                 container.style.backgroundImage = "url('IMG_3372.PNG')";
                 renderFields();
             };
@@ -121,63 +119,55 @@
                 el.style.left = conf.left + '%';
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
-                addDragEvents(el);
+                addDrag(el);
                 container.appendChild(el);
             });
         }
 
-        function addDragEvents(el) {
+        function addDrag(el) {
             let active = false;
-            let currentY, currentX, initialY, initialX, xOffset = 0, yOffset = 0;
+            let startX, startY, initialLeft, initialTop;
 
-            el.addEventListener("touchstart", dragStart, {passive: false});
-            el.addEventListener("mousedown", dragStart);
-
-            function dragStart(e) {
+            const onStart = (e) => {
                 if (!devToggle.checked) return;
-                
-                const pos = el.getBoundingClientRect();
-                const containerPos = container.getBoundingClientRect();
-
-                // Початкові координати в %
-                initialX = ((pos.left - containerPos.left) / containerPos.width) * 100;
-                initialY = ((pos.top - containerPos.top) / containerPos.height) * 100;
-
-                if (e.type === "touchstart") {
-                    startX = e.touches[0].clientX;
-                    startY = e.touches[0].clientY;
-                } else {
-                    startX = e.clientX;
-                    startY = e.clientY;
-                }
-                
                 active = true;
-            }
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                
+                startX = clientX;
+                startY = clientY;
+                initialLeft = parseFloat(el.style.left);
+                initialTop = parseFloat(el.style.top);
+                el.style.zIndex = 1000;
+            };
 
-            window.addEventListener("touchmove", drag, {passive: false});
-            window.addEventListener("mousemove", drag);
+            const onMove = (e) => {
+                if (!active) return;
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
-            function drag(e) {
-                if (active) {
-                    e.preventDefault();
-                    const touch = e.type === "touchmove" ? e.touches[0] : e;
-                    const rect = container.getBoundingClientRect();
+                const dx = ((clientX - startX) / container.offsetWidth) * 100;
+                const dy = ((clientY - startY) / container.offsetHeight) * 100;
 
-                    let moveX = ((touch.clientX - startX) / rect.width) * 100;
-                    let moveY = ((touch.clientY - startY) / rect.height) * 100;
+                const L = (initialLeft + dx).toFixed(2);
+                const T = (initialTop + dy).toFixed(2);
 
-                    let finalLeft = (initialX + moveX).toFixed(2);
-                    let finalTop = (initialY + moveY).toFixed(2);
+                el.style.left = L + '%';
+                el.style.top = T + '%';
+                coordsDisplay.innerText = `L: ${L}% T: ${T}%`;
+            };
 
-                    el.style.left = finalLeft + "%";
-                    el.style.top = finalTop + "%";
+            const onEnd = () => {
+                active = false;
+                el.style.zIndex = 10;
+            };
 
-                    coordsDisplay.innerText = `L: ${finalLeft}% T: ${finalTop}%`;
-                }
-            }
-
-            window.addEventListener("touchend", () => active = false);
-            window.addEventListener("mouseup", () => active = false);
+            el.addEventListener('mousedown', onStart);
+            el.addEventListener('touchstart', onStart, {passive: false});
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('touchmove', onMove, {passive: false});
+            window.addEventListener('mouseup', onEnd);
+            window.addEventListener('touchend', onEnd);
         }
 
         devToggle.onchange = () => {
