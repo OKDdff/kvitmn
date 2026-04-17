@@ -17,16 +17,15 @@
         #dev-tools {
             width: 100%; max-width: 500px;
             background: #222; color: #fff;
-            padding: 10px; font-size: 12px;
-            display: flex; justify-content: space-between;
-            z-index: 100;
+            padding: 10px; font-size: 11px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; position: sticky; top: 0;
         }
 
         #wrapper {
             width: 100%; max-width: 500px;
             background-color: #fff;
             position: relative;
-            overflow-y: auto;
         }
 
         .receipt-container {
@@ -45,19 +44,21 @@
             letter-spacing: -0.01em;
             color: #1a1a1c;
             -webkit-font-smoothing: antialiased;
-            cursor: move; /* Вказуємо, що можна рухати */
+            z-index: 5;
+            min-width: 10px;
         }
 
-        /* Зменшений шрифт */
-        .editable { font-size: calc(var(--size) * 0.95vw); }
+        /* Ще менший шрифт за замовчуванням */
+        .editable { font-size: calc(var(--size) * 0.9vw); }
         @media (min-width: 500px) {
-            .editable { font-size: calc(var(--size) * 4.75px); }
+            .editable { font-size: calc(var(--size) * 4.5px); }
         }
 
-        /* Стиль для режиму розробника */
+        /* Режим розробника */
         .dev-mode .editable {
             background: rgba(255, 0, 0, 0.1);
             border: 1px dashed red;
+            cursor: move;
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
@@ -67,8 +68,8 @@
 <body>
 
     <div id="dev-tools">
-        <span>Режим розробника: <input type="checkbox" id="dev-toggle"></span>
-        <span id="coords-display">Координати з'являться тут</span>
+        <label>🛠 Режим розробника: <input type="checkbox" id="dev-toggle"></label>
+        <span id="coords-display">L: 0% T: 0%</span>
     </div>
 
     <div id="wrapper">
@@ -80,14 +81,26 @@
         const devToggle = document.getElementById('dev-toggle');
         const coordsDisplay = document.getElementById('coords-display');
 
+        // Повний список рядків назад
         const fieldsConfig = [
             { id: 'm1', t: '04B3-T314-B969-2M3C', left: 49.3, top: 23.4, s: 2.6, growLeft: true },
             { id: 'm2', t: '14.04.2026', left: 58.5, top: 23.4, s: 2.6 },
-            { id: 'm3', t: 'Ящук Роман Миколайович', left: 47.4, top: 27.5, s: 2.5 },
-            { id: 'm4', t: 'Універсал Банк', left: 47.4, top: 29.3, s: 2.5 },
-            { id: 'm12', t: '200.00', left: 47.4, top: 49.3, s: 2.6 },
-            { id: 'm14', t: 'двісті гривень 00 копійок', left: 47.4, top: 52.85, s: 2.5 }
-            // Додай інші поля за потреби
+            { id: 'm3', t: 'Ящук Роман Миколайович', left: 47.4, top: 27.5, s: 2.4 },
+            { id: 'm4', t: 'Універсал Банк', left: 47.4, top: 29.3, s: 2.4 },
+            { id: 'm5', t: '322001', left: 47.4, top: 31.05, s: 2.4 },
+            { id: 'm6', t: 'VISA', left: 47.4, top: 32.8, s: 2.4 },
+            { id: 'm7', t: 'UA6232200100000262000332156538', left: 47.4, top: 34.45, s: 2.1 },
+            { id: 'm8', t: '444111******1335', left: 47.4, top: 36.3, s: 2.4 },
+            { id: 'm9', t: 'ПриватБанк', left: 47.4, top: 40.8, s: 2.4 },
+            { id: 'm10', t: 'VISA', left: 47.4, top: 42.6, s: 2.4 },
+            { id: 'm11', t: '4149499075804946', left: 47.4, top: 44.4, s: 2.4 },
+            { id: 'm12', t: '200.00', left: 47.4, top: 49.3, s: 2.5 },
+            { id: 'm13', t: '0.00', left: 47.4, top: 51.1, s: 2.5 },
+            { id: 'm14', t: 'двісті гривень 00 копійок', left: 47.4, top: 52.85, s: 2.4 },
+            { id: 'm15', t: '490404', left: 47.4, top: 54.6, s: 2.4 },
+            { id: 'm16', t: 'Переказ особистих коштів', left: 47.4, top: 56.4, s: 2.4 },
+            { id: 'm17', t: '14.04.2026 12:57', left: 47.4, top: 58.1, s: 2.4 },
+            { id: 'm18', t: 'MONODirectR', left: 47.4, top: 59.9, s: 2.4 }
         ];
 
         function init() {
@@ -110,45 +123,53 @@
                 el.style.left = conf.left + '%';
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
-
-                // Логіка перетягування
                 makeDraggable(el);
-                
                 container.appendChild(el);
             });
         }
 
         function makeDraggable(el) {
             let isDragging = false;
-            el.addEventListener('mousedown', startDrag);
-            el.addEventListener('touchstart', startDrag, {passive: false});
+            let startX, startY, startLeft, startTop;
 
-            function startDrag(e) {
+            const start = (e) => {
                 if (!devToggle.checked) return;
                 isDragging = true;
-                e.preventDefault();
-            }
+                const touch = e.type === 'touchstart' ? e.touches[0] : e;
+                startX = touch.clientX;
+                startY = touch.clientY;
+                startLeft = parseFloat(el.style.left);
+                startTop = parseFloat(el.style.top);
+                el.style.zIndex = 1000;
+            };
 
-            window.addEventListener('mousemove', drag);
-            window.addEventListener('touchmove', drag, {passive: false});
-
-            function drag(e) {
+            const move = (e) => {
                 if (!isDragging) return;
-                let x = e.touches ? e.touches[0].clientX : e.clientX;
-                let y = e.touches ? e.touches[0].clientY : e.clientY;
-
-                let rect = container.getBoundingClientRect();
-                let newLeft = ((x - rect.left) / rect.width) * 100;
-                let newTop = ((y - rect.top) / rect.height) * 100;
-
-                el.style.left = newLeft.toFixed(2) + '%';
-                el.style.top = newTop.toFixed(2) + '%';
+                const touch = e.type === 'touchmove' ? e.touches[0] : e;
+                const rect = container.getBoundingClientRect();
                 
-                coordsDisplay.innerText = `L: ${newLeft.toFixed(1)}% T: ${newTop.toFixed(1)}%`;
-            }
+                const deltaX = ((touch.clientX - startX) / rect.width) * 100;
+                const deltaY = ((touch.clientY - startY) / rect.height) * 100;
 
-            window.addEventListener('mouseup', () => isDragging = false);
-            window.addEventListener('touchend', () => isDragging = false);
+                const finalLeft = (startLeft + deltaX).toFixed(2);
+                const finalTop = (startTop + deltaY).toFixed(2);
+
+                el.style.left = finalLeft + '%';
+                el.style.top = finalTop + '%';
+                coordsDisplay.innerText = `L: ${finalLeft}% T: ${finalTop}%`;
+            };
+
+            const end = () => {
+                isDragging = false;
+                el.style.zIndex = 5;
+            };
+
+            el.addEventListener('mousedown', start);
+            el.addEventListener('touchstart', start, { passive: false });
+            window.addEventListener('mousemove', move);
+            window.addEventListener('touchmove', move, { passive: false });
+            window.addEventListener('mouseup', end);
+            window.addEventListener('touchend', end);
         }
 
         devToggle.onchange = () => {
