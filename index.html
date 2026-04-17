@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Monobank Fullscreen Editor</title>
+    <title>Monobank Receipt Editor</title>
     <style>
         @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
 
@@ -13,19 +13,10 @@
             background-color: #fff;
             font-family: 'Manrope', sans-serif;
             overflow-x: hidden;
-            touch-action: none; /* Блокуємо скрол в режимі редагування */
-        }
-
-        #dev-tools {
-            position: fixed; top: 0; left: 0; width: 100%;
-            background: rgba(0,0,0,0.8); color: #0f0;
-            padding: 8px; font-family: monospace; font-size: 11px;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 9999;
         }
 
         #receipt-wrapper {
-            width: 100vw; /* Чітко на всю ширину екрана */
+            width: 100vw;
             position: relative;
             background-color: #fff;
         }
@@ -47,27 +38,21 @@
             color: #1a1a1c;
             -webkit-font-smoothing: antialiased;
             z-index: 10;
-            touch-action: none; /* Важливо для Drag-and-Drop */
         }
 
-        /* Шрифт чітко під екран телефону */
-        .editable { font-size: calc(var(--size) * 0.9vw); }
+        /* Трохи збільшений шрифт */
+        .editable { font-size: calc(var(--size) * 0.96vw); }
 
-        .dev-mode .editable {
-            box-shadow: 0 0 0 1px rgba(0, 255, 0, 0.4);
-            background: rgba(0, 255, 0, 0.05);
+        /* Для великих екранів, щоб не розповзалося */
+        @media (min-width: 600px) {
+            #receipt-wrapper { max-width: 500px; margin: 0 auto; }
+            .editable { font-size: calc(var(--size) * 4.8px); }
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
-        .hidden { display: none; }
     </style>
 </head>
-<body class="dev-mode">
-
-    <div id="dev-tools">
-        <label><input type="checkbox" id="dev-toggle" checked> DEV MODE</label>
-        <span id="coords">L: 0% T: 0%</span>
-    </div>
+<body>
 
     <div id="receipt-wrapper">
         <div id="receipt" class="receipt-container" spellcheck="false"></div>
@@ -75,8 +60,6 @@
 
     <script>
         const container = document.getElementById('receipt');
-        const devToggle = document.getElementById('dev-toggle');
-        const coordsDisplay = document.getElementById('coords');
 
         const fieldsConfig = [
             { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 49.3, top: 23.4, s: 2.6, growLeft: true },
@@ -103,7 +86,7 @@
             const img = new Image();
             img.src = 'IMG_3372.PNG'; 
             img.onload = function() {
-                container.style.height = (window.innerWidth * (img.height / img.width)) + 'px';
+                container.style.height = (container.offsetWidth * (img.height / img.width)) + 'px';
                 container.style.backgroundImage = "url('IMG_3372.PNG')";
                 renderFields();
             };
@@ -119,60 +102,9 @@
                 el.style.left = conf.left + '%';
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
-                addDrag(el);
                 container.appendChild(el);
             });
         }
-
-        function addDrag(el) {
-            let active = false;
-            let startX, startY, initialLeft, initialTop;
-
-            const onStart = (e) => {
-                if (!devToggle.checked) return;
-                active = true;
-                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-                
-                startX = clientX;
-                startY = clientY;
-                initialLeft = parseFloat(el.style.left);
-                initialTop = parseFloat(el.style.top);
-                el.style.zIndex = 1000;
-            };
-
-            const onMove = (e) => {
-                if (!active) return;
-                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
-                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-
-                const dx = ((clientX - startX) / container.offsetWidth) * 100;
-                const dy = ((clientY - startY) / container.offsetHeight) * 100;
-
-                const L = (initialLeft + dx).toFixed(2);
-                const T = (initialTop + dy).toFixed(2);
-
-                el.style.left = L + '%';
-                el.style.top = T + '%';
-                coordsDisplay.innerText = `L: ${L}% T: ${T}%`;
-            };
-
-            const onEnd = () => {
-                active = false;
-                el.style.zIndex = 10;
-            };
-
-            el.addEventListener('mousedown', onStart);
-            el.addEventListener('touchstart', onStart, {passive: false});
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('touchmove', onMove, {passive: false});
-            window.addEventListener('mouseup', onEnd);
-            window.addEventListener('touchend', onEnd);
-        }
-
-        devToggle.onchange = () => {
-            document.body.className = devToggle.checked ? 'dev-mode' : '';
-        };
 
         window.onload = init;
     </script>
