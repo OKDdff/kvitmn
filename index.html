@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mono Editor">
+    <link rel="apple-touch-icon" href="icon.png">
+    
     <title>Monobank Receipt Editor</title>
+    
     <style>
         @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
 
@@ -13,6 +20,8 @@
             background-color: #fff;
             font-family: 'Manrope', sans-serif;
             overflow-x: hidden;
+            /* Заборона виділення системних елементів */
+            -webkit-user-select: none;
         }
 
         #receipt-wrapper {
@@ -38,12 +47,15 @@
             color: #1a1a1c;
             -webkit-font-smoothing: antialiased;
             z-index: 10;
+            /* Дозволяємо виділення тексту для редагування */
+            -webkit-user-select: text;
+            /* Мінімальна ширина, щоб поле не зникало */
+            min-width: 5px;
+            min-height: 1em;
         }
 
-        /* Трохи збільшений шрифт */
         .editable { font-size: calc(var(--size) * 0.96vw); }
 
-        /* Для великих екранів, щоб не розповзалося */
         @media (min-width: 600px) {
             #receipt-wrapper { max-width: 500px; margin: 0 auto; }
             .editable { font-size: calc(var(--size) * 4.8px); }
@@ -102,6 +114,14 @@
                 el.style.left = conf.left + '%';
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
+
+                // Захист від повного видалення
+                el.addEventListener('blur', function() {
+                    if (this.innerText.trim() === "") {
+                        this.innerText = " "; // Вставляємо пробіл, щоб поле не зникло
+                    }
+                });
+
                 container.appendChild(el);
             });
         }
