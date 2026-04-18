@@ -15,11 +15,12 @@
         body, html {
             margin: 0; padding: 0; 
             width: 100%; height: 100%;
-            background-color: #111111;
+            background-color: #111111; /* Чорний фон інтерфейсу */
             font-family: 'Manrope', sans-serif;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            -webkit-user-select: none;
         }
 
         #main-view {
@@ -28,14 +29,16 @@
             align-items: center;
             justify-content: center;
             padding: 10px;
+            overflow-y: auto;
         }
 
-        /* Контейнер квитанції (те, що піде в PDF) */
+        /* Контейнер квитанції, який буде в PDF */
         #receipt-wrapper {
             width: 100%;
             max-width: 400px;
             background-color: #fff;
             position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         .receipt-container {
@@ -53,20 +56,26 @@
             font-weight: 600; 
             color: #1a1a1c;
             z-index: 10;
+            -webkit-user-select: text;
         }
 
+        /* Адаптивний розмір шрифту */
         .editable { font-size: calc(var(--size) * 0.96vw); }
 
         @media (min-width: 600px) {
-            .editable { font-size: calc(var(--size) * 3.84px); }
+            #receipt-wrapper { max-width: 500px; }
+            .editable { font-size: calc(var(--size) * 4.8px); }
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
 
+        /* Стиль кнопки "Поділитися" */
         .bottom-bar {
             padding: 20px 16px 40px;
+            background-color: #111111;
             display: flex;
             justify-content: center;
+            z-index: 100;
         }
 
         #share-btn {
@@ -80,7 +89,10 @@
             font-size: 18px;
             font-weight: 500;
             cursor: pointer;
+            transition: transform 0.1s;
         }
+
+        #share-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -100,6 +112,7 @@
         const shareBtn = document.getElementById('share-btn');
         const { jsPDF } = window.jspdf;
 
+        // Конфігурація полів згідно з документом
         const fieldsConfig = [
             { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 50.91, top: 25.79, s: 2.6, growLeft: true },
             { id: 'm2', t: '18.04.2026', left: 58.11, top: 25.79, s: 2.6 },
@@ -144,6 +157,7 @@
             });
         }
 
+        // Рандомна назва файлу за принципом Monobank 
         function generateRandomName() {
             const chars = '0123456789ABCDEF';
             const part = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * 16)]).join('');
@@ -154,14 +168,14 @@
             const receiptEl = document.getElementById('receipt-wrapper');
             
             html2canvas(receiptEl, {
-                scale: 4, // Дуже висока чіткість для PDF
+                scale: 4, // Висока якість для читабельності тексту
                 useCORS: true
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'px',
-                    format: [canvas.width / 4, canvas.height / 4] // Адаптивний розмір сторінки під квитанцію
+                    format: [canvas.width / 4, canvas.height / 4]
                 });
 
                 pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 4, canvas.height / 4);
