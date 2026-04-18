@@ -31,7 +31,7 @@
 
         #receipt-wrapper {
             width: 100%;
-            max-width: 500px; /* Обмеження для десктопа */
+            max-width: 500px;
             background-color: #fff;
             position: relative;
             align-self: flex-start;
@@ -59,21 +59,19 @@
             -webkit-user-select: text;
             user-select: text;
             min-width: 2px;
-            /* Динамічний розмір шрифту */
             font-size: calc(var(--size) * 1vw);
         }
 
-        /* Адаптація шрифту для великих екранів */
         @media (min-width: 500px) {
             .editable { font-size: calc(var(--size) * 5px); }
         }
 
+        /* Текст розширюється вліво (для дати та інших полів) */
         .grow-left { 
             transform: translateX(-100%); 
             text-align: right; 
         }
 
-        /* Візуальна підказка при редагуванні */
         .editable:focus {
             background: rgba(0, 0, 0, 0.03);
             border-radius: 2px;
@@ -90,7 +88,8 @@
         const container = document.getElementById('receipt');
 
         const fieldsConfig = [
-            { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 50.91, top: 25.79, s: 2.6, growLeft: true },
+            // Для m1 (номер квитанції) прибрано growLeft: true, тепер він редагується вправо
+            { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 40.00, top: 25.79, s: 2.6 }, 
             { id: 'm2', t: '18.04.2026', left: 58.11, top: 25.79, s: 2.6 },
             { id: 'm3', t: 'Мельник Артем Вікторович', left: 47.73, top: 27.86, s: 2.4 },
             { id: 'm4', t: 'Універсал Банк', left: 47.73, top: 29.33, s: 2.4 },
@@ -114,7 +113,6 @@
             const img = new Image();
             img.src = 'IMG_3372.PNG'; 
             img.onload = function() {
-                // Встановлюємо висоту контейнера згідно з пропорціями зображення
                 const ratio = img.height / img.width;
                 container.style.paddingBottom = (ratio * 100) + '%';
                 container.style.backgroundImage = `url('${img.src}')`;
@@ -133,7 +131,6 @@
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
 
-                // Виділення всього тексту при натисканні
                 el.addEventListener('focus', function() {
                     const range = document.createRange();
                     range.selectNodeContents(this);
@@ -142,7 +139,6 @@
                     sel.addRange(range);
                 });
 
-                // Захист від порожнього поля
                 el.addEventListener('blur', function() {
                     if (this.innerText.trim() === "") {
                         this.innerText = " "; 
