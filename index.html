@@ -11,16 +11,17 @@
     
     <title>Monobank Receipt Editor</title>
     
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
     <style>
         @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
 
         body, html {
             margin: 0; padding: 0; 
             width: 100%; min-height: 100%;
-            background-color: #fff;
+            background-color: #1a1a1c; /* Темний фон як у додатку */
             font-family: 'Manrope', sans-serif;
             overflow-x: hidden;
-            /* Заборона виділення системних елементів */
             -webkit-user-select: none;
         }
 
@@ -47,9 +48,7 @@
             color: #1a1a1c;
             -webkit-font-smoothing: antialiased;
             z-index: 10;
-            /* Дозволяємо виділення тексту для редагування */
             -webkit-user-select: text;
-            /* Мінімальна ширина, щоб поле не зникало */
             min-width: 5px;
             min-height: 1em;
         }
@@ -62,6 +61,32 @@
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
+
+        /* Стильна кнопка "Поділитися" */
+        .share-button-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            background-color: #1a1a1c;
+        }
+
+        #share-btn {
+            width: 100%;
+            max-width: 400px;
+            background-color: #ff5b5c;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        #share-btn:active {
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -70,8 +95,13 @@
         <div id="receipt" class="receipt-container" spellcheck="false"></div>
     </div>
 
+    <div class="share-button-container">
+        <button id="share-btn">Поділитися квитанцією</button>
+    </div>
+
     <script>
         const container = document.getElementById('receipt');
+        const shareBtn = document.getElementById('share-btn');
 
         const fieldsConfig = [
             { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 50.91, top: 25.79, s: 2.6, growLeft: true },
@@ -115,16 +145,39 @@
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
 
-                // Захист від повного видалення
                 el.addEventListener('blur', function() {
                     if (this.innerText.trim() === "") {
-                        this.innerText = " "; // Вставляємо пробіл, щоб поле не зникло
+                        this.innerText = " ";
                     }
                 });
 
                 container.appendChild(el);
             });
         }
+
+        // Функція генерації рандомної назви як у PDF/PNG квитанціях
+        function generateRandomName() {
+            const chars = '0123456789ABCDEF';
+            const part = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * 16)]).join('');
+            // Формат: A604723B-F012-4C2B-BF28-3DFECA999B54
+            return `${part(8)}-${part(4)}-${part(4)}-${part(4)}-${part(12)}.png`;
+        }
+
+        // Логіка кнопки "Поділитися"
+        shareBtn.onclick = function() {
+            // Робимо скріншот тільки обгортки квитанції
+            html2canvas(document.getElementById('receipt-wrapper'), {
+                scale: 3, // Висока якість
+                useCORS: true,
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = generateRandomName();
+                link.href = dataUrl;
+                link.click();
+            });
+        };
 
         window.onload = init;
     </script>
