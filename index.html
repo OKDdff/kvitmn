@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Mono Editor">
-    <link rel="apple-touch-icon" href="icon.png">
-    
     <title>Monobank Receipt Editor</title>
     
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <style>
         @font-face { font-family: 'Manrope'; src: url('Manrope.ttf'); }
@@ -19,30 +15,27 @@
         body, html {
             margin: 0; padding: 0; 
             width: 100%; height: 100%;
-            background-color: #111111; /* Чорний фон як на скріншоті */
+            background-color: #111111;
             font-family: 'Manrope', sans-serif;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            -webkit-user-select: none;
         }
 
-        /* Контейнер для центрування квитанції */
         #main-view {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            overflow: hidden;
+            padding: 10px;
         }
 
+        /* Контейнер квитанції (те, що піде в PDF) */
         #receipt-wrapper {
             width: 100%;
-            max-width: 400px; /* Обмеження ширини для схожості з телефоном */
-            position: relative;
+            max-width: 400px;
             background-color: #fff;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
         }
 
         .receipt-container {
@@ -58,25 +51,20 @@
             outline: none;
             white-space: nowrap;
             font-weight: 600; 
-            letter-spacing: -0.01em;
             color: #1a1a1c;
-            -webkit-font-smoothing: antialiased;
             z-index: 10;
-            -webkit-user-select: text;
         }
 
         .editable { font-size: calc(var(--size) * 0.96vw); }
 
         @media (min-width: 600px) {
-            .editable { font-size: calc(var(--size) * 3.8px); }
+            .editable { font-size: calc(var(--size) * 3.84px); }
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
 
-        /* Нижня панель з кнопкою */
         .bottom-bar {
-            padding: 20px 16px 40px 16px;
-            background-color: #111111;
+            padding: 20px 16px 40px;
             display: flex;
             justify-content: center;
         }
@@ -84,7 +72,7 @@
         #share-btn {
             width: 100%;
             max-width: 380px;
-            background-color: #ff5252; /* Колір кнопки зі скріншота */
+            background-color: #ff5252;
             color: white;
             border: none;
             padding: 18px;
@@ -92,11 +80,6 @@
             font-size: 18px;
             font-weight: 500;
             cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        #share-btn:active {
-            transform: scale(0.98);
         }
     </style>
 </head>
@@ -115,6 +98,7 @@
     <script>
         const container = document.getElementById('receipt');
         const shareBtn = document.getElementById('share-btn');
+        const { jsPDF } = window.jspdf;
 
         const fieldsConfig = [
             { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 50.91, top: 25.79, s: 2.6, growLeft: true },
@@ -150,18 +134,12 @@
         function renderFields() {
             fieldsConfig.forEach(conf => {
                 const el = document.createElement('div');
-                el.id = conf.id;
                 el.className = 'editable' + (conf.growLeft ? ' grow-left' : '');
                 el.contentEditable = "true";
                 el.style.top = conf.top + '%';
                 el.style.left = conf.left + '%';
                 el.style.setProperty('--size', conf.s);
                 el.innerText = conf.t;
-
-                el.addEventListener('blur', function() {
-                    if (this.innerText.trim() === "") this.innerText = " ";
-                });
-
                 container.appendChild(el);
             });
         }
@@ -169,19 +147,25 @@
         function generateRandomName() {
             const chars = '0123456789ABCDEF';
             const part = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * 16)]).join('');
-            return `${part(8)}-${part(4)}-${part(4)}-${part(4)}-${part(12)}.png`;
+            return `${part(8)}-${part(4)}-${part(4)}-${part(4)}-${part(12)}.pdf`;
         }
 
         shareBtn.onclick = function() {
-            html2canvas(document.getElementById('receipt-wrapper'), {
-                scale: 3, 
-                useCORS: true,
-                backgroundColor: "#ffffff"
+            const receiptEl = document.getElementById('receipt-wrapper');
+            
+            html2canvas(receiptEl, {
+                scale: 4, // Дуже висока чіткість для PDF
+                useCORS: true
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = generateRandomName();
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'px',
+                    format: [canvas.width / 4, canvas.height / 4] // Адаптивний розмір сторінки під квитанцію
+                });
+
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 4, canvas.height / 4);
+                pdf.save(generateRandomName());
             });
         };
 
