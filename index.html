@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <title>Monobank Receipt Editor</title>
     
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -15,87 +14,93 @@
         body, html {
             margin: 0; padding: 0; 
             width: 100%; height: 100%;
-            background-color: #111111; /* Чорний фон інтерфейсу */
+            background-color: #1a1a1a; /* Темний фон як на скріншоті */
             font-family: 'Manrope', sans-serif;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
-            -webkit-user-select: none;
+            color: white;
+            overflow: hidden;
         }
 
+        /* Верхня панель (Header) */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 45px 16px 15px;
+            background-color: #1a1a1a;
+        }
+        .header .back-icon { font-size: 24px; cursor: pointer; width: 30px; }
+        .header .title { flex: 1; text-align: center; font-size: 18px; font-weight: 500; margin-right: 30px; }
+
+        /* Основна область з квитанцією */
         #main-view {
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 10px;
             overflow-y: auto;
+            padding: 10px;
         }
 
-        /* Контейнер квитанції, який буде в PDF */
         #receipt-wrapper {
             width: 100%;
-            max-width: 400px;
+            max-width: 360px;
             background-color: #fff;
             position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         .receipt-container {
             width: 100%;
             position: relative;
             background-size: 100% 100%;
-            background-repeat: no-repeat;
         }
 
         .editable {
             position: absolute;
             background: transparent; 
             outline: none;
-            white-space: nowrap;
             font-weight: 600; 
             color: #1a1a1c;
             z-index: 10;
-            -webkit-user-select: text;
+            font-size: calc(var(--size) * 0.96vw);
         }
 
-        /* Адаптивний розмір шрифту */
-        .editable { font-size: calc(var(--size) * 0.96vw); }
-
         @media (min-width: 600px) {
-            #receipt-wrapper { max-width: 500px; }
-            .editable { font-size: calc(var(--size) * 4.8px); }
+            .editable { font-size: calc(var(--size) * 3.84px); }
         }
 
         .grow-left { transform: translateX(-100%); text-align: right; }
 
-        /* Стиль кнопки "Поділитися" */
+        /* Нижня панель з кнопкою */
         .bottom-bar {
             padding: 20px 16px 40px;
-            background-color: #111111;
+            background-color: #1a1a1a;
             display: flex;
             justify-content: center;
-            z-index: 100;
         }
 
         #share-btn {
             width: 100%;
             max-width: 380px;
-            background-color: #ff5252;
+            background-color: #ff5252; /* Колір кнопки зі скріншота */
             color: white;
             border: none;
             padding: 18px;
-            border-radius: 16px;
-            font-size: 18px;
+            border-radius: 14px;
+            font-size: 17px;
             font-weight: 500;
             cursor: pointer;
-            transition: transform 0.1s;
         }
 
-        #share-btn:active { transform: scale(0.98); }
+        #share-btn:active { opacity: 0.8; }
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <div class="back-icon">←</div>
+        <div class="title">Квитанція</div>
+    </div>
 
     <div id="main-view">
         <div id="receipt-wrapper">
@@ -112,26 +117,14 @@
         const shareBtn = document.getElementById('share-btn');
         const { jsPDF } = window.jspdf;
 
-        // Конфігурація полів згідно з документом
         const fieldsConfig = [
-            { id: 'm1', t: '99A1-K442-L088-5Z3C', left: 50.91, top: 25.79, s: 2.6, growLeft: true },
-            { id: 'm2', t: '18.04.2026', left: 58.11, top: 25.79, s: 2.6 },
-            { id: 'm3', t: 'Мельник Артем Вікторович', left: 47.73, top: 27.86, s: 2.4 },
-            { id: 'm4', t: 'Універсал Банк', left: 47.73, top: 29.33, s: 2.4 },
-            { id: 'm5', t: '322001', left: 47.73, top: 30.81, s: 2.4 },
-            { id: 'm6', t: 'Mastercard', left: 47.73, top: 32.29, s: 2.4 },
-            { id: 'm7', t: 'UA4432200100000262000112233445', left: 47.73, top: 33.85, s: 2.1 },
-            { id: 'm8', t: '516875******4490', left: 47.73, top: 35.21, s: 2.4 },
-            { id: 'm9', t: 'ПриватБанк', left: 47.73, top: 39.95, s: 2.4 },
-            { id: 'm10', t: 'VISA', left: 47.73, top: 41.45, s: 2.4 },
-            { id: 'm11', t: '4149499988887777', left: 47.73, top: 42.92, s: 2.4 },
-            { id: 'm12', t: '3,200.00', left: 47.73, top: 47.37, s: 2.5 },
-            { id: 'm13', t: '0.00', left: 47.73, top: 48.84, s: 2.5 },
-            { id: 'm14', t: 'три тисячі двісті гривень 00 копійок', left: 47.73, top: 50.31, s: 2.3 },
-            { id: 'm15', t: '771209', left: 47.73, top: 51.78, s: 2.4 },
-            { id: 'm16', t: 'Оплата послуг', left: 47.73, top: 53.25, s: 2.4 },
-            { id: 'm17', t: '18.04.2026 09:15', left: 47.73, top: 54.72, s: 2.4 },
-            { id: 'm18', t: 'MONO-API-GATE', left: 47.73, top: 56.19, s: 2.4 }
+            { id: 'm1', t: '04B3-T314-B969-2M3C', left: 50.91, top: 23.4, s: 2.6, growLeft: true },
+            { id: 'm2', t: '14.04.2026', left: 58.11, top: 23.4, s: 2.6 },
+            { id: 'm3', t: 'Яцюк Роман Миколайович', left: 47.73, top: 27.2, s: 2.4 },
+            { id: 'm4', t: 'Універсал Банк', left: 47.73, top: 29.1, s: 2.4 },
+            { id: 'm9', t: 'ПриватБанк', left: 47.73, top: 40.2, s: 2.4 },
+            { id: 'm12', t: '200.00', left: 47.73, top: 47.37, s: 2.5 },
+            { id: 'm14', t: 'двісті гривень 00 копійок', left: 47.73, top: 50.31, s: 2.3 }
         ];
 
         function init() {
@@ -157,7 +150,6 @@
             });
         }
 
-        // Рандомна назва файлу за принципом Monobank 
         function generateRandomName() {
             const chars = '0123456789ABCDEF';
             const part = (len) => Array.from({length: len}, () => chars[Math.floor(Math.random() * 16)]).join('');
@@ -165,10 +157,8 @@
         }
 
         shareBtn.onclick = function() {
-            const receiptEl = document.getElementById('receipt-wrapper');
-            
-            html2canvas(receiptEl, {
-                scale: 4, // Висока якість для читабельності тексту
+            html2canvas(document.getElementById('receipt-wrapper'), {
+                scale: 4,
                 useCORS: true
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
@@ -177,7 +167,6 @@
                     unit: 'px',
                     format: [canvas.width / 4, canvas.height / 4]
                 });
-
                 pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 4, canvas.height / 4);
                 pdf.save(generateRandomName());
             });
